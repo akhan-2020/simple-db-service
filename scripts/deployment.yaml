@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-db-service
+  labels:
+    run: simple-db-service
+spec:
+  selector:
+    matchLabels:
+      run: simple-db-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: simple-db-service
+        app: simple-db-service
+    spec:
+      containers:
+        - name: simple-db-service
+          image: akhan2017/simple-db-service
+          resources:
+            requests:
+              cpu: 200m
+          ports:
+            - containerPort: 8181
+          env:
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          args:
+            - "-javaagent:/apm-dd/dd-java-agent-0.43.0.jar"
+          volumeMounts:
+            - mountPath: /apm-dd
+              name: apm-volume
+      volumes:
+        - name: apm-volume
+          hostPath:
+            path: /libs
+

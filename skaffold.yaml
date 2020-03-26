@@ -1,0 +1,11 @@
+apiVersion: skaffold/v1beta15
+kind: Config
+metadata:
+  name: mongodb
+build:
+  artifacts:
+  - image: akhan2017/simple-db-service
+deploy:
+  kubectl:
+    manifests:
+    - scripts/deployment.yaml

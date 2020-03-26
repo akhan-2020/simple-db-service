@@ -2,6 +2,7 @@ package com.akhan.mongo.demo;
 
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 
 
 public class Customer {
@@ -11,6 +12,8 @@ public class Customer {
 
     public String firstName;
     public String lastName;
+
+
     public String phone;
 
     public Customer() {}
