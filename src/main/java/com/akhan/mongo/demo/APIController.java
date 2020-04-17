@@ -3,23 +3,47 @@ package com.akhan.mongo.demo;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.jms.pool.PooledConnectionFactory;
+//import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.jms.core.JmsMessagingTemplate;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.MessageType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.jms.*;
 
+@Component
 @RestController
 public class APIController {
 
     private static final String template = "Hello, %s!";
-    private final AtomicLong counter = new AtomicLong();
+    //private final AtomicLong counter = new AtomicLong();
     private static final Logger logger = LogManager.getLogger(APIController.class);
+
+
+    @Autowired
+    private JmsMessagingTemplate jmsMessagingTemplate;
+
+    @Autowired
+    private Queue queue;
+
+    @Bean // Serialize message content to json using TextMessage
+    public MessageConverter jacksonJmsMessageConverter() {
+        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+        converter.setTargetType(MessageType.TEXT);
+        converter.setTypeIdPropertyName("_type");
+        return converter;
+    }
 
     @Autowired
     private CustomerRepository repository;
@@ -27,12 +51,13 @@ public class APIController {
     @PostMapping(value="/customer", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Customer customer(@RequestBody Customer customer) {
 
-        logger.debug("Entered greeting method - name : {}", () -> customer.getFirstName());
+        logger.info("Entered /customer - name : {}", () -> customer.getFirstName());
 
+        this.jmsMessagingTemplate.convertAndSend(this.queue, new Message(customer.getPhone(), "Thank you for signing up"));
         // save a couple of customers
         //Customer customer = new Customer(fname, lname, phone);
         repository.save(customer);
-        logger.info("Created customer : {} " + customer.getLastName());
+        logger.info("Created customer : {} " + customer.firstName  +  " " + customer.getLastName());
         return customer;
     }
 
@@ -47,12 +72,13 @@ public class APIController {
         */
 
        // int random = insertRandomDelay();
-
+        logger.info("Entered /customer/phone : {}", () -> phone);
         Customer customer = repository.findByPhone(phone);
         if(customer==null) {
+            logger.error("Unable to find customer by phone : {} " + phone);
             throw new DataAccessException("No Customers found");
         }
-        logger.info("found customer ");
+        logger.info("found customer : " + phone);
         return customer;
     }
 
@@ -72,7 +98,7 @@ public class APIController {
         return rand;
     }
 
-
+ /*
     private void writeMessageToQ(String message){
 
         // Create a connection factory.
@@ -121,5 +147,7 @@ public class APIController {
 
 
     }
+
+  */
 
 }
